@@ -46,6 +46,18 @@ struct SettingsView: View {
                     config.updateProvider(updated)
                 }
             }
+            .alert("重置所有供应商", isPresented: $showResetAlert) {
+                Button("取消", role: .cancel) {}
+                Button("重置", role: .destructive) {
+                    config.providers = []
+                    config.activeProviderID = nil
+                    UserDefaults.standard.removeObject(forKey: "saved_providers")
+                    UserDefaults.standard.removeObject(forKey: "active_provider_id")
+                    config.loadAll()
+                }
+            } message: {
+                Text("这将删除所有已保存的供应商配置（如旧版本的 geek2api 地址），恢复为默认模板。历史记录不受影响。")
+            }
         }
     }
     
@@ -128,10 +140,30 @@ struct SettingsView: View {
                 Image(systemName: "sparkle.magic").foregroundColor(.accentColor).frame(width: 24)
                 Text("AI Image Gen").font(.subheadline)
                 Spacer()
-                Text("v3.0").font(.caption).foregroundColor(.secondary)
+                Text("v3.1").font(.caption).foregroundColor(.secondary)
             }
             Text("支持 OpenAI 兼容、Google Gemini、SD WebUI、ComfyUI，可自由添加和管理供应商，支持文生图和图生图").font(.caption).foregroundColor(.secondary).padding(.leading, 32)
+            
+            Divider().padding(.top, 8)
+            
+            // 重置按钮
+            Button(role: .destructive) {
+                resetAllProviders()
+            } label: {
+                HStack {
+                    Image(systemName: "arrow.counterclockwise")
+                    Text("重置所有供应商（清除旧数据）")
+                        .font(.caption)
+                }
+            }
+            .padding(.top, 4)
         }.padding(16)
+    }
+    
+    @State private var showResetAlert = false
+    
+    private func resetAllProviders() {
+        showResetAlert = true
     }
 }
 

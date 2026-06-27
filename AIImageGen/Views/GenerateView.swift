@@ -166,6 +166,18 @@ struct GenerateView: View {
                 .padding(.horizontal, 12).padding(.vertical, 8)
                 .background(RoundedRectangle(cornerRadius: 10).fill(.ultraThinMaterial))
             }
+            
+            // 显示当前 API 地址
+            if let prov = selectedProvider, !prov.apiURL.isEmpty {
+                HStack {
+                    Image(systemName: "link").foregroundColor(.accentColor.opacity(0.6)).font(.caption)
+                    Text(prov.apiURL)
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary.opacity(0.6))
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 12)
+            }
         }
     }
     

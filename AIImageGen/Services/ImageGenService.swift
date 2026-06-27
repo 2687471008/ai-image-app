@@ -255,6 +255,8 @@ class ImageGenService {
         guard !provider.apiKey.isEmpty else { throw ServiceError.noAPIKey }
         
         let modelName = provider.model.isEmpty ? "imagen-3.0-generate-001" : provider.model
+        
+        // Gemini Imagen API: POST /v1/models/{model}:generateImages?key=...
         guard let url = URL(string: "\(baseURL)/v1/models/\(modelName):generateImages?key=\(provider.apiKey)") else {
             throw ServiceError.invalidURL
         }
@@ -281,12 +283,20 @@ class ImageGenService {
         guard let httpResponse = response as? HTTPURLResponse else { throw ServiceError.networkError("无响应") }
         guard httpResponse.statusCode == 200 else {
             let errorBody = String(data: data, encoding: .utf8) ?? "未知错误"
-            throw ServiceError.networkError("HTTP \(httpResponse.statusCode): \(errorBody)")
+            throw ServiceError.networkError("Gemini HTTP \(httpResponse.statusCode): \(errorBody)")
         }
         
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw ServiceError.decodeError }
         
-        // Gemini Imagen 返回格式
+        // Gemini Imagen 返回格式: {"generatedImages": [{"image": {"bytesBase64Encoded": "..."}}]}
+        if let images = json["generatedImages"] as? [[String: Any]], let first = images.first {
+            if let imageObj = first["image"] as? [String: Any],
+               let b64 = imageObj["bytesBase64Encoded"] as? String,
+               let imageData = Data(base64Encoded: b64),
+               let image = UIImage(data: imageData) { return image }
+        }
+        
+        // 兼容旧格式: {"predictions": [{"bytesBase64Encoded": "..."}]}
         if let predictions = json["predictions"] as? [[String: Any]], let first = predictions.first {
             if let b64 = first["bytesBase64Encoded"] as? String,
                let imageData = Data(base64Encoded: b64),
