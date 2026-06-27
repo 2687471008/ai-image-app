@@ -162,7 +162,7 @@ struct GenerateView: View {
     // MARK: - 负面提示词
     private var negativePromptInput: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("负面提示词 (Negative Prompt)", systemName: "text.badge.xmark")
+            Label("负面提示词 (Negative Prompt)", systemImage: "exclamationmark.bubble")
                 .font(.headline)
                 .foregroundColor(.red.opacity(0.7))
             
