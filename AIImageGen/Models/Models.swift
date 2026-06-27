@@ -4,39 +4,79 @@ import SwiftUI
 // MARK: - 生图协议
 enum ImageProtocol: String, CaseIterable, Codable, Identifiable {
     case openai = "OpenAI 兼容"
+    case gemini = "Google Gemini"
     case sdWebUI = "Stable Diffusion WebUI"
     case comfyUI = "ComfyUI"
     
     var id: String { rawValue }
-    
     var displayName: String { rawValue }
+    
+    /// 用户填基础地址后自动补齐的路径
+    var autoSuffix: String {
+        switch self {
+        case .openai:   return "/v1/images/generations"
+        case .gemini:   return "/v1/models/{model}:generateImages"
+        case .sdWebUI:  return "/sdapi/v1/txt2img"
+        case .comfyUI:  return "/prompt"
+    }}
+    
+    /// 拉取模型列表的 API 路径（空 = 不支持）
+    var modelListPath: String {
+        switch self {
+        case .openai:   return "/v1/models"
+        case .gemini:   return "/v1/models"
+        case .sdWebUI:  return ""
+        case .comfyUI:  return ""
+    }}
+    
+    /// 图生图的 API 路径（空 = 不支持图生图）
+    var img2imgSuffix: String {
+        switch self {
+        case .sdWebUI:  return "/sdapi/v1/img2img"
+        default:        return ""
+    }}
     
     var supportsModel: Bool {
         switch self {
-        case .openai: return true
+        case .openai, .gemini: return true
         case .sdWebUI, .comfyUI: return false
-        }
-    }
-    
-    var supportsSize: Bool {
-        switch self {
-        case .openai: return true
-        case .sdWebUI, .comfyUI: return false
-        }
-    }
+    }}
     
     var supportsSteps: Bool {
         switch self {
         case .sdWebUI, .comfyUI: return true
-        case .openai: return false
-        }
-    }
+        case .openai, .gemini: return false
+    }}
     
     var supportsNegativePrompt: Bool {
         switch self {
         case .sdWebUI: return true
-        case .openai, .comfyUI: return false
+        default: return false
+    }}
+    
+    var supportsImageToImage: Bool {
+        switch self {
+        case .sdWebUI: return true
+        default: return false
+    }}
+    
+    /// 自动补齐完整 API 地址
+    static func completeURL(base: String, protocolType: ImageProtocol, model: String = "") -> String {
+        var url = base.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
+        if url.isEmpty { return "" }
+        
+        let suffix = protocolType.autoSuffix
+        // 如果已经包含完整路径就不补
+        if url.hasSuffix(suffix) || url.contains("/v1/") || url.contains("/sdapi/") || url.contains("/prompt") {
+            return url
         }
+        
+        if protocolType == .gemini {
+            let modelName = model.isEmpty ? "imagen-3.0-generate-001" : model
+            return url + "/v1/models/\(modelName):generateImages"
+        }
+        
+        return url + suffix
     }
 }
 
@@ -45,18 +85,23 @@ struct Provider: Identifiable, Codable, Equatable {
     var id: UUID
     var name: String
     var protocolType: ImageProtocol
-    var apiURL: String
+    var baseURL: String       // 用户填的基础地址
+    var apiURL: String        // 自动补齐后的完整地址
     var apiKey: String
     var model: String
+    var availableModels: [String]  // 从 API 拉取的模型列表
     
     init(id: UUID = UUID(), name: String, protocolType: ImageProtocol,
-         apiURL: String = "", apiKey: String = "", model: String = "") {
+         baseURL: String = "", apiURL: String = "", apiKey: String = "",
+         model: String = "", availableModels: [String] = []) {
         self.id = id
         self.name = name
         self.protocolType = protocolType
+        self.baseURL = baseURL
         self.apiURL = apiURL
         self.apiKey = apiKey
         self.model = model
+        self.availableModels = availableModels
     }
 }
 
@@ -95,12 +140,14 @@ struct GenerationRecord: Identifiable, Codable {
     let timestamp: Date
     let isSuccess: Bool
     let errorMessage: String?
+    let isImageToImage: Bool
     
     init(id: UUID = UUID(), prompt: String, negativePrompt: String = "",
          providerName: String, protocolType: ImageProtocol, model: String = "",
          sizeLabel: String = "", imageData: Data? = nil,
          imageURL: String? = nil, timestamp: Date = Date(),
-         isSuccess: Bool, errorMessage: String? = nil) {
+         isSuccess: Bool, errorMessage: String? = nil,
+         isImageToImage: Bool = false) {
         self.id = id
         self.prompt = prompt
         self.negativePrompt = negativePrompt
@@ -113,6 +160,7 @@ struct GenerationRecord: Identifiable, Codable {
         self.timestamp = timestamp
         self.isSuccess = isSuccess
         self.errorMessage = errorMessage
+        self.isImageToImage = isImageToImage
     }
 }
 
@@ -127,7 +175,16 @@ class AppConfig: ObservableObject {
     @Published var history: [GenerationRecord] = []
     
     var activeProvider: Provider? {
-        providers.first { $0.id == activeProviderID }
+        get { providers.first { $0.id == activeProviderID } }
+        set {
+            if let p = newValue {
+                if let idx = providers.firstIndex(where: { $0.id == p.id }) {
+                    providers[idx] = p
+                }
+                activeProviderID = p.id
+                saveProviders()
+            }
+        }
     }
     
     var currentSize: ImageSizeOption {
@@ -146,49 +203,43 @@ class AppConfig: ObservableObject {
     private let customWKey = "custom_width"
     private let customHKey = "custom_height"
     
-    init() {
-        loadAll()
-    }
+    init() { loadAll() }
     
     func loadAll() {
-        // 加载供应商
         if let data = defaults.data(forKey: providersKey),
            let list = try? JSONDecoder().decode([Provider].self, from: data) {
             providers = list
         }
-        
-        // 加载活跃供应商
         if let idStr = defaults.string(forKey: activeKey),
            let id = UUID(uuidString: idStr) {
             activeProviderID = id
         }
-        
-        // 如果没有任何供应商，添加默认空模板
         if providers.isEmpty {
             providers = [
-                Provider(name: "我的供应商", protocolType: .openai, apiURL: "", apiKey: "", model: "dall-e-3"),
-                Provider(name: "SD WebUI", protocolType: .sdWebUI, apiURL: "http://192.168.1.100:7860/sdapi/v1/txt2img"),
-                Provider(name: "ComfyUI", protocolType: .comfyUI, apiURL: "http://192.168.1.100:8188/prompt"),
+                Provider(name: "我的供应商", protocolType: .openai, baseURL: "https://api.openai.com", apiKey: "", model: "dall-e-3"),
+                Provider(name: "Gemini", protocolType: .gemini, baseURL: "https://generativelanguage.googleapis.com", apiKey: "", model: "imagen-3.0-generate-001"),
+                Provider(name: "SD WebUI", protocolType: .sdWebUI, baseURL: "http://192.168.1.100:7860"),
+                Provider(name: "ComfyUI", protocolType: .comfyUI, baseURL: "http://192.168.1.100:8188"),
             ]
+            // 补齐地址
+            for i in providers.indices {
+                providers[i].apiURL = ImageProtocol.completeURL(base: providers[i].baseURL, protocolType: providers[i].protocolType, model: providers[i].model)
+            }
             activeProviderID = providers[0].id
             saveProviders()
         }
-        
-        // 如果活跃供应商不存在，选第一个
         if activeProviderID == nil || !providers.contains(where: { $0.id == activeProviderID }) {
             activeProviderID = providers.first?.id
         }
-        
-        // 加载尺寸
         if let data = defaults.data(forKey: sizeKey),
            let size = try? JSONDecoder().decode(ImageSizeOption.self, from: data) {
             imageSize = size
         }
-        customWidth = defaults.integer(forKey: customWKey).nonZero ?? 1024
-        customHeight = defaults.integer(forKey: customHKey).nonZero ?? 1024
-        steps = defaults.double(forKey: stepsKey).nonZero ?? 20
-        
-        // 加载历史
+        customWidth = max(defaults.integer(forKey: customWKey), 256)
+        customHeight = max(defaults.integer(forKey: customHKey), 256)
+        if customWidth == 256 && customHeight == 256 { customWidth = 1024; customHeight = 1024 }
+        steps = defaults.double(forKey: stepsKey)
+        if steps == 0 { steps = 20 }
         if let data = defaults.data(forKey: historyKey),
            let records = try? JSONDecoder().decode([GenerationRecord].self, from: data) {
             history = records
@@ -196,8 +247,9 @@ class AppConfig: ObservableObject {
     }
     
     func saveProviders() {
-        guard let data = try? JSONEncoder().encode(providers) else { return }
-        defaults.set(data, forKey: providersKey)
+        if let data = try? JSONEncoder().encode(providers) {
+            defaults.set(data, forKey: providersKey)
+        }
         defaults.set(activeProviderID?.uuidString, forKey: activeKey)
     }
     
@@ -232,9 +284,7 @@ class AppConfig: ObservableObject {
     
     func addRecord(_ record: GenerationRecord) {
         history.insert(record, at: 0)
-        if history.count > 200 {
-            history = Array(history.prefix(200))
-        }
+        if history.count > 200 { history = Array(history.prefix(200)) }
         if let data = try? JSONEncoder().encode(history) {
             defaults.set(data, forKey: historyKey)
         }
@@ -246,12 +296,4 @@ class AppConfig: ObservableObject {
             defaults.set(data, forKey: historyKey)
         }
     }
-}
-
-extension Int {
-    var nonZero: Int? { self == 0 ? nil : self }
-}
-
-extension Double {
-    var nonZero: Double? { self == 0 ? nil : self }
 }

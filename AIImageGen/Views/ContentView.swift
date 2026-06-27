@@ -62,7 +62,6 @@ struct TabButton: View {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 22, weight: isSelected ? .semibold : .regular))
-                    .symbolEffect(.bounce, value: isSelected)
                 Text(title)
                     .font(.caption2)
                     .fontWeight(isSelected ? .semibold : .regular)
