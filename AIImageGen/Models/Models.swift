@@ -56,7 +56,7 @@ enum ImageProtocol: String, CaseIterable, Codable, Identifiable {
     
     var supportsImageToImage: Bool {
         switch self {
-        case .sdWebUI: return true
+        case .sdWebUI, .gemini: return true
         default: return false
     }}
     
@@ -66,9 +66,14 @@ enum ImageProtocol: String, CaseIterable, Codable, Identifiable {
         if url.isEmpty { return "" }
         
         let suffix = protocolType.autoSuffix
+        
         // 如果已经包含完整路径就不补
-        if url.hasSuffix(suffix) || url.contains("/v1/") || url.contains("/sdapi/") || url.contains("/prompt") {
-            return url
+        // 检查是否已经包含 API 路径特征
+        let apiPatterns = ["/v1/images/generations", "/v1/models/", "/sdapi/v1/", "/prompt", ":generateImages"]
+        for pattern in apiPatterns {
+            if url.contains(pattern) {
+                return url
+            }
         }
         
         if protocolType == .gemini {

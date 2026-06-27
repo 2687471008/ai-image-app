@@ -211,12 +211,16 @@ class ImageGenService {
         request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization")
         request.timeoutInterval = 120
         
+        // OpenAI DALL-E 3 只支持 1024x1024 / 1792x1024 / 1024x1792
+        // 其他兼容 API 可能只支持 1024x1024，所以用最安全的尺寸
+        let safeSizes = ["1024x1024", "1792x1024", "1024x1792"]
         let sizeString = "\(size.width)x\(size.height)"
+        let finalSize = safeSizes.contains(sizeString) ? sizeString : "1024x1024"
         
         var body: [String: Any] = [
             "prompt": prompt,
             "n": 1,
-            "size": sizeString,
+            "size": finalSize,
             "response_format": "b64_json"
         ]
         if !provider.model.isEmpty { body["model"] = provider.model }
