@@ -1,0 +1,278 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10001 /* AIImageGenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10001; };
+		A10002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002; };
+		A10003 /* GenerateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10003; };
+		A10004 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10004; };
+		A10005 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10005; };
+		A10006 /* ImageGenService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10006; };
+		A10007 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10007; };
+		A10008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10008; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B10001 /* AIImageGenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIImageGenApp.swift; sourceTree = "<group>"; };
+		B10002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B10003 /* GenerateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateView.swift; sourceTree = "<group>"; };
+		B10004 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		B10005 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B10006 /* ImageGenService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGenService.swift; sourceTree = "<group>"; };
+		B10007 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		B10008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B10009 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B10010 /* AIImageGen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AIImageGen.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		C10001 = {
+			isa = PBXGroup;
+			children = (
+				C10002 /* AIImageGen */,
+				C10003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C10002 /* AIImageGen */ = {
+			isa = PBXGroup;
+			children = (
+				B10001 /* AIImageGenApp.swift */,
+				C10004 /* Views */,
+				C10005 /* Services */,
+				C10006 /* Models */,
+				B10008 /* Assets.xcassets */,
+				B10009 /* Info.plist */,
+			);
+			path = AIImageGen;
+			sourceTree = "<group>";
+		};
+		C10003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B10010 /* AIImageGen.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C10004 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				B10002 /* ContentView.swift */,
+				B10003 /* GenerateView.swift */,
+				B10004 /* HistoryView.swift */,
+				B10005 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		C10005 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				B10006 /* ImageGenService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		C10006 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				B10007 /* Models.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D10001 /* AIImageGen */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E10001;
+			buildPhases = (
+				F10001 /* Sources */,
+				F10002 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = ();
+			name = AIImageGen;
+			productName = AIImageGen;
+			productReference = B10010;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		G10001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = E10002;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = "zh-Hans";
+			hasScannedForEncodings = 0;
+			knownRegions = (en, "zh-Hans", Base);
+			mainGroup = C10001;
+			productRefGroup = C10003;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (D10001 /* AIImageGen */);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F10002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (A10008 /* Assets.xcassets in Resources */);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F10001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10001 /* AIImageGenApp.swift in Sources */,
+				A10002 /* ContentView.swift in Sources */,
+				A10003 /* GenerateView.swift in Sources */,
+				A10004 /* HistoryView.swift in Sources */,
+				A10005 /* SettingsView.swift in Sources */,
+				A10006 /* ImageGenService.swift in Sources */,
+				A10007 /* Models.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		H10001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGNING_ALLOWED = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AIImageGen/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "AI 生图";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.aiimagegen;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		H10002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGNING_ALLOWED = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AIImageGen/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "AI 生图";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.aiimagegen;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		H10003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("DEBUG=1", "$(inherited)");
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		H10004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E10001 /* Build configuration list for PBXNativeTarget "AIImageGen" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (H10001 /* Debug */, H10002 /* Release */);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E10002 /* Build configuration list for PBXProject "AIImageGen" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (H10003 /* Debug */, H10004 /* Release */);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = G10001 /* Project object */;
+}

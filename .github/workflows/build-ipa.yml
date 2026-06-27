@@ -1,0 +1,43 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build .app
+        run: |
+          xcodebuild -project AIImageGen.xcodeproj \
+            -scheme AIImageGen \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath /tmp/derived \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=YES \
+            build
+
+      - name: Package .ipa
+        run: |
+          mkdir -p /tmp/ipa/Payload
+          APP_PATH=$(find /tmp/derived -name "*.app" -type d | head -1)
+          echo "App found at: $APP_PATH"
+          cp -R "$APP_PATH" /tmp/ipa/Payload/
+          codesign --force --sign - /tmp/ipa/Payload/*.app
+          cd /tmp/ipa
+          zip -r AIImageGen.ipa Payload/
+          ls -lh AIImageGen.ipa
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: AIImageGen.ipa
+          path: /tmp/ipa/AIImageGen.ipa
