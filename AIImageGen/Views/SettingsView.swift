@@ -85,7 +85,7 @@ struct SettingsView: View {
                 .multilineTextAlignment(.trailing)
                 .autocapitalization(.none)
                 .autocorrectionDisabled()
-                .onChange(of: config.apiURL) { _, new in
+                .onChange(of: config.apiURL) { new in
                     config.apiURL = new
                     config.saveConfig()
                 }
@@ -114,7 +114,7 @@ struct SettingsView: View {
                         .foregroundColor(.secondary)
                 }
             }
-            .onChange(of: config.apiKey) { _, new in
+            .onChange(of: config.apiKey) { new in
                 config.apiKey = new
                 config.saveConfig()
             }
@@ -130,7 +130,7 @@ struct SettingsView: View {
                 .multilineTextAlignment(.trailing)
                 .autocapitalization(.none)
                 .autocorrectionDisabled()
-                .onChange(of: config.model) { _, new in
+                .onChange(of: config.model) { new in
                     config.model = new
                     config.saveConfig()
                 }
@@ -177,7 +177,7 @@ struct SettingsView: View {
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 12)
-            .onChange(of: config.steps) { _, _ in
+            .onChange(of: config.steps) { _ in
                 config.saveConfig()
             }
         }
@@ -224,7 +224,7 @@ struct SettingsRow<Content: View>: View {
             
             Spacer()
             
-            content()
+            content
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)

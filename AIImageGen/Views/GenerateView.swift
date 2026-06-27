@@ -117,7 +117,7 @@ struct GenerateView: View {
                             .foregroundColor(.secondary)
                         Text("这可能需要 10-30 秒")
                             .font(.caption)
-                            .foregroundColor(.tertiary)
+                            .foregroundColor(.secondary.opacity(0.5))
                     }
                 }
             }

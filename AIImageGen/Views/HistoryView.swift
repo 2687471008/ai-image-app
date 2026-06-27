@@ -72,7 +72,7 @@ struct HistoryView: View {
                 .foregroundColor(.secondary)
             Text("去「生成」页面试试吧")
                 .font(.subheadline)
-                .foregroundColor(.tertiary)
+                .foregroundColor(.secondary.opacity(0.5))
         }
     }
 }
@@ -123,14 +123,14 @@ struct HistoryRow: View {
                 
                 Text(record.timestamp, style: .relative)
                     .font(.caption2)
-                    .foregroundColor(.tertiary)
+                    .foregroundColor(.secondary.opacity(0.5))
             }
             
             Spacer()
             
             Image(systemName: "chevron.right")
                 .font(.caption)
-                .foregroundColor(.tertiary)
+                .foregroundColor(.secondary.opacity(0.5))
         }
         .padding(12)
         .background(
