@@ -251,3 +251,7 @@ class AppConfig: ObservableObject {
 extension Int {
     var nonZero: Int? { self == 0 ? nil : self }
 }
+
+extension Double {
+    var nonZero: Double? { self == 0 ? nil : self }
+}
