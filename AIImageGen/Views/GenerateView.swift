@@ -19,6 +19,13 @@ struct GenerateView: View {
                 // 顶部标题
                 headerView
                 
+                // 当前供应商
+                if let provider = config.activeProvider {
+                    activeProviderBar(provider: provider)
+                } else {
+                    noProviderBar
+                }
+                
                 // 图片预览区
                 imagePreviewCard
                 
@@ -44,6 +51,11 @@ struct GenerateView: View {
         } message: {
             Text(errorMessage)
         }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6)) {
+                animateCard = true
+            }
+        }
     }
     
     // MARK: - 顶部标题
@@ -52,12 +64,11 @@ struct GenerateView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("AI 生图")
                     .font(.system(size: 34, weight: .bold))
-                Text(config.provider.rawValue)
+                Text("选择供应商开始生成")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
             Spacer()
-            // Provider 指示器
             HStack(spacing: 4) {
                 Circle()
                     .fill(isGenerating ? Color.orange : Color.green)
@@ -71,6 +82,70 @@ struct GenerateView: View {
             .background(.ultraThinMaterial, in: Capsule())
         }
         .padding(.top, 60)
+    }
+    
+    // MARK: - 供应商栏
+    private func activeProviderBar(provider: Provider) -> some View {
+        HStack {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.accentColor)
+                    .frame(width: 28, height: 28)
+                Image(systemName: providerIcon(provider.protocolType))
+                    .font(.caption)
+                    .foregroundColor(.white)
+            }
+            
+            VStack(alignment: .leading, spacing: 1) {
+                Text(provider.name)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text(provider.protocolType.displayName)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            if !provider.model.isEmpty {
+                Text(provider.model)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.ultraThinMaterial)
+        )
+    }
+    
+    private var noProviderBar: some View {
+        HStack {
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundColor(.orange)
+            Text("请先在设置中添加供应商")
+                .font(.subheadline)
+                .foregroundColor(.orange)
+            Spacer()
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.orange.opacity(0.1))
+        )
+    }
+    
+    private func providerIcon(_ p: ImageProtocol) -> String {
+        switch p {
+        case .openai: return "sparkle.magic"
+        case .sdWebUI: return "paintbrush"
+        case .comfyUI: return "square.grid.3x3"
+        }
     }
     
     // MARK: - 图片预览
@@ -185,31 +260,33 @@ struct GenerateView: View {
     private var controlButtons: some View {
         HStack(spacing: 12) {
             // 负面提示词开关
-            ToggleButton(
-                icon: "hand.raised",
-                title: "负面词",
-                isOn: $showNegativePrompt
-            )
+            if config.activeProvider?.protocolType.supportsNegativePrompt ?? false {
+                ToggleButton(
+                    icon: "hand.raised",
+                    title: "负面词",
+                    isOn: $showNegativePrompt
+                )
+            }
             
             // 尺寸
             Menu {
-                ForEach(ImageSize.allCases, id: \.self) { size in
-                    Button(size.displayName) {
+                ForEach(ImageSizeOption.presets) { size in
+                    Button(size.label) {
                         config.imageSize = size
-                        config.saveConfig()
+                        config.saveSettings()
                     }
                 }
             } label: {
-                ControlChip(icon: "rectangle.split.3x3", title: config.imageSize.displayName)
+                ControlChip(icon: "rectangle.split.3x3", title: config.currentSize.label)
             }
             
-            // 步数（SD 专用）
-            if config.provider.supportsSteps {
+            // 步数（SD/ComfyUI 专用）
+            if config.activeProvider?.protocolType.supportsSteps ?? false {
                 Menu {
                     ForEach([10, 15, 20, 25, 30, 40, 50], id: \.self) { step in
                         Button("\(step) 步") {
                             config.steps = Double(step)
-                            config.saveConfig()
+                            config.saveSettings()
                         }
                     }
                 } label: {
@@ -242,13 +319,18 @@ struct GenerateView: View {
             .foregroundColor(.white)
             .shadow(color: .accentColor.opacity(0.3), radius: 10, y: 5)
         }
-        .disabled(isGenerating || prompt.trimmingCharacters(in: .whitespaces).isEmpty)
-        .opacity(prompt.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1)
+        .disabled(isGenerating || prompt.trimmingCharacters(in: .whitespaces).isEmpty || config.activeProvider == nil)
+        .opacity((prompt.trimmingCharacters(in: .whitespaces).isEmpty || config.activeProvider == nil) ? 0.5 : 1)
     }
     
     // MARK: - 生成逻辑
     private func generate() {
         guard !prompt.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        guard let provider = config.activeProvider else {
+            errorMessage = "请先在设置中添加并选择供应商"
+            showError = true
+            return
+        }
         
         isGenerating = true
         
@@ -257,19 +339,22 @@ struct GenerateView: View {
                 let image = try await service.generate(
                     prompt: prompt,
                     negativePrompt: negativePrompt,
-                    config: config
+                    provider: provider,
+                    size: config.currentSize,
+                    steps: config.steps
                 )
                 
                 await MainActor.run {
                     generatedImage = image
                     isGenerating = false
                     
-                    // 保存记录
                     let record = GenerationRecord(
                         prompt: prompt,
                         negativePrompt: negativePrompt,
-                        provider: config.provider,
-                        model: config.model,
+                        providerName: provider.name,
+                        protocolType: provider.protocolType,
+                        model: provider.model,
+                        sizeLabel: config.currentSize.label,
                         imageData: image.pngData(),
                         isSuccess: true
                     )
@@ -284,8 +369,10 @@ struct GenerateView: View {
                     config.addRecord(GenerationRecord(
                         prompt: prompt,
                         negativePrompt: negativePrompt,
-                        provider: config.provider,
-                        model: config.model,
+                        providerName: provider.name,
+                        protocolType: provider.protocolType,
+                        model: provider.model,
+                        sizeLabel: config.currentSize.label,
                         isSuccess: false,
                         errorMessage: error.localizedDescription
                     ))

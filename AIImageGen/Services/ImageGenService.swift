@@ -7,18 +7,71 @@ class ImageGenService {
     enum ServiceError: LocalizedError {
         case invalidURL
         case noAPIKey
+        case noActiveProvider
         case networkError(String)
         case decodeError
         case noImageInResponse
+        case timeout
         
         var errorDescription: String? {
             switch self {
             case .invalidURL: return "API 地址格式错误"
             case .noAPIKey: return "请先配置 API Key"
+            case .noActiveProvider: return "请先选择一个供应商"
             case .networkError(let msg): return "网络错误: \(msg)"
             case .decodeError: return "响应解析失败"
             case .noImageInResponse: return "返回数据中没有图片"
+            case .timeout: return "请求超时，请检查网络或 API 地址"
             }
+        }
+    }
+    
+    // MARK: - 检查连通性
+    func checkConnectivity(provider: Provider) async -> (Bool, String) {
+        guard let url = URL(string: provider.apiURL), !provider.apiURL.isEmpty else {
+            return (false, "API 地址无效")
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 10
+        
+        if !provider.apiKey.isEmpty {
+            request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization")
+        }
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                return (false, "无响应")
+            }
+            
+            if httpResponse.statusCode == 200 {
+                return (true, "连接成功 ✅")
+            } else if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+                return (false, "API Key 无效 (HTTP \(httpResponse.statusCode))")
+            } else if httpResponse.statusCode == 404 {
+                // 有些 API 的 GET 路径可能不同，尝试 POST 检查
+                return (false, "地址可能正确，但 GET 请求返回 404（部分 API 只接受 POST）")
+            } else {
+                let body = String(data: data, encoding: .utf8) ?? ""
+                return (false, "HTTP \(httpResponse.statusCode): \(body.prefix(100))")
+            }
+        } catch let error as URLError {
+            switch error.code {
+            case .timedOut:
+                return (false, "连接超时 ⏱️")
+            case .cannotConnectToHost:
+                return (false, "无法连接到服务器 🔌")
+            case .notConnectedToInternet:
+                return (false, "网络不可用 📡")
+            case .dnsLookupFailed:
+                return (false, "DNS 解析失败 🌐")
+            default:
+                return (false, "连接失败: \(error.localizedDescription)")
+            }
+        } catch {
+            return (false, "连接失败: \(error.localizedDescription)")
         }
     }
     
@@ -26,39 +79,36 @@ class ImageGenService {
     func generate(
         prompt: String,
         negativePrompt: String,
-        config: AppConfig
+        provider: Provider,
+        size: ImageSizeOption,
+        steps: Double
     ) async throws -> UIImage {
-        switch config.provider {
-        case .openai, .openaiCompatible:
-            return try await generateOpenAI(prompt: prompt, config: config)
+        switch provider.protocolType {
+        case .openai:
+            return try await generateOpenAI(prompt: prompt, provider: provider, size: size)
         case .sdWebUI:
-            return try await generateSDWebUI(prompt: prompt, negativePrompt: negativePrompt, config: config)
+            return try await generateSDWebUI(prompt: prompt, negativePrompt: negativePrompt, provider: provider, size: size, steps: steps)
         case .comfyUI:
-            return try await generateComfyUI(prompt: prompt, config: config)
+            return try await generateComfyUI(prompt: prompt, provider: provider, steps: steps)
         }
     }
     
     // MARK: - OpenAI / 兼容协议
-    private func generateOpenAI(prompt: String, config: AppConfig) async throws -> UIImage {
-        guard let url = URL(string: config.apiURL) else {
+    private func generateOpenAI(prompt: String, provider: Provider, size: ImageSizeOption) async throws -> UIImage {
+        guard let url = URL(string: provider.apiURL) else {
             throw ServiceError.invalidURL
         }
-        guard !config.apiKey.isEmpty else {
+        guard !provider.apiKey.isEmpty else {
             throw ServiceError.noAPIKey
         }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization")
         request.timeoutInterval = 120
         
-        let sizeString: String
-        switch config.imageSize {
-        case .square: sizeString = "1024x1024"
-        case .landscape: sizeString = "1792x1024"
-        case .portrait: sizeString = "1024x1792"
-        }
+        let sizeString = "\(size.width)x\(size.height)"
         
         var body: [String: Any] = [
             "prompt": prompt,
@@ -67,8 +117,8 @@ class ImageGenService {
             "response_format": "b64_json"
         ]
         
-        if !config.model.isEmpty {
-            body["model"] = config.model
+        if !provider.model.isEmpty {
+            body["model"] = provider.model
         }
         
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -109,8 +159,8 @@ class ImageGenService {
     }
     
     // MARK: - Stable Diffusion WebUI
-    private func generateSDWebUI(prompt: String, negativePrompt: String, config: AppConfig) async throws -> UIImage {
-        guard let url = URL(string: config.apiURL) else {
+    private func generateSDWebUI(prompt: String, negativePrompt: String, provider: Provider, size: ImageSizeOption, steps: Double) async throws -> UIImage {
+        guard let url = URL(string: provider.apiURL) else {
             throw ServiceError.invalidURL
         }
         
@@ -119,17 +169,17 @@ class ImageGenService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 300
         
-        if !config.apiKey.isEmpty {
-            request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+        if !provider.apiKey.isEmpty {
+            request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization")
         }
         
         let body: [String: Any] = [
             "prompt": prompt,
             "negative_prompt": negativePrompt,
-            "steps": Int(config.steps),
+            "steps": Int(steps),
             "batch_size": 1,
-            "width": 1024,
-            "height": 1024,
+            "width": size.width,
+            "height": size.height,
             "cfg_scale": 7
         ]
         
@@ -161,21 +211,18 @@ class ImageGenService {
     }
     
     // MARK: - ComfyUI
-    private func generateComfyUI(prompt: String, config: AppConfig) async throws -> UIImage {
-        // ComfyUI 需要先提交 prompt，然后轮询获取结果
-        // 这里实现简化版，通过 API 提交并等待
-        guard let url = URL(string: config.apiURL) else {
+    private func generateComfyUI(prompt: String, provider: Provider, steps: Double) async throws -> UIImage {
+        guard let url = URL(string: provider.apiURL) else {
             throw ServiceError.invalidURL
         }
         
-        // 构建 ComfyUI 工作流 prompt
         let workflow: [String: Any] = [
             "prompt": [
                 "3": [
                     "class_type": "KSampler",
                     "inputs": [
                         "seed": Int.random(in: 1...999999999),
-                        "steps": Int(config.steps),
+                        "steps": Int(steps),
                         "cfg": 7,
                         "sampler_name": "euler",
                         "scheduler": "normal",
@@ -213,8 +260,6 @@ class ImageGenService {
             throw ServiceError.networkError("HTTP \(httpResponse.statusCode): \(errorBody)")
         }
         
-        // ComfyUI 返回 prompt_id，需要轮询获取结果
-        // 简化版：提示用户 ComfyUI 需要额外配置
         throw ServiceError.networkError("ComfyUI 需要配置输出节点，请在 ComfyUI 界面查看结果")
     }
 }

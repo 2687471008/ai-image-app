@@ -25,7 +25,9 @@ struct HistoryView: View {
                         }
                         .onDelete { indexSet in
                             config.history.remove(atOffsets: indexSet)
-                            config.saveHistory()
+                            if let data = try? JSONEncoder().encode(config.history) {
+                                UserDefaults.standard.set(data, forKey: "generation_history")
+                            }
                         }
                     }
                     .listStyle(.plain)
@@ -110,7 +112,7 @@ struct HistoryRow: View {
                     .lineLimit(2)
                 
                 HStack(spacing: 8) {
-                    Label(record.provider.rawValue, systemImage: "sparkle.magic")
+                    Label(record.providerName, systemImage: "sparkle.magic")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                     
@@ -167,7 +169,17 @@ struct HistoryDetailView: View {
                             InfoRow(label: "负面词", value: record.negativePrompt, color: .red)
                         }
                         
-                        InfoRow(label: "模型", value: record.provider.rawValue)
+                        InfoRow(label: "供应商", value: record.providerName)
+                        InfoRow(label: "协议", value: record.protocolType.displayName)
+                        
+                        if !record.model.isEmpty {
+                            InfoRow(label: "模型", value: record.model)
+                        }
+                        
+                        if !record.sizeLabel.isEmpty {
+                            InfoRow(label: "尺寸", value: record.sizeLabel)
+                        }
+                        
                         InfoRow(label: "时间", value: record.timestamp.formatted())
                         
                         if let error = record.errorMessage {
